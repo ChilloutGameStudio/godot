@@ -441,6 +441,30 @@ SubViewport *EditorInterface::get_editor_viewport_3d(int p_idx) const {
 	return Node3DEditor::get_singleton()->get_editor_viewport(p_idx)->get_viewport_node();
 }
 
+Dictionary EditorInterface::get_editor_viewport_3d_state(int p_idx) const {
+	ERR_FAIL_INDEX_V(p_idx, static_cast<int>(Node3DEditor::VIEWPORTS_COUNT), Dictionary());
+	return Node3DEditor::get_singleton()->get_editor_viewport(p_idx)->get_state();
+}
+
+void EditorInterface::set_editor_viewport_3d_state(int p_idx, const Dictionary &p_state) {
+	ERR_FAIL_INDEX(p_idx, static_cast<int>(Node3DEditor::VIEWPORTS_COUNT));
+	Node3DEditor::get_singleton()->get_editor_viewport(p_idx)->set_state(p_state);
+}
+
+void EditorInterface::set_editor_3d_clip(float p_znear, float p_zfar) {
+	Node3DEditor::get_singleton()->set_z_clip(p_znear, p_zfar);
+}
+
+void EditorInterface::set_editor_3d_grid_enabled(bool p_enabled) {
+	Node3DEditor::get_singleton()->set_grid_enabled(p_enabled);
+}
+
+void EditorInterface::set_editor_viewports_3d_planet_up(bool p_enabled, const Vector3 &p_origin) {
+	for (int i = 0; i < static_cast<int>(Node3DEditor::VIEWPORTS_COUNT); i++) {
+		Node3DEditor::get_singleton()->get_editor_viewport(i)->get_controller()->set_planet_up(p_enabled, p_origin);
+	}
+}
+
 #ifndef DISABLE_DEPRECATED
 void EditorInterface::set_main_screen_editor(const String &p_name) {
 	EditorDock *dock = EditorNode::get_singleton()->get_editor_main_screen()->get_dock_by_name(p_name);
@@ -893,6 +917,11 @@ void EditorInterface::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_script_editor"), &EditorInterface::get_script_editor);
 	ClassDB::bind_method(D_METHOD("get_editor_viewport_2d"), &EditorInterface::get_editor_viewport_2d);
 	ClassDB::bind_method(D_METHOD("get_editor_viewport_3d", "idx"), &EditorInterface::get_editor_viewport_3d, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("get_editor_viewport_3d_state", "idx"), &EditorInterface::get_editor_viewport_3d_state, DEFVAL(0));
+	ClassDB::bind_method(D_METHOD("set_editor_viewport_3d_state", "idx", "state"), &EditorInterface::set_editor_viewport_3d_state);
+	ClassDB::bind_method(D_METHOD("set_editor_viewports_3d_planet_up", "enabled", "origin"), &EditorInterface::set_editor_viewports_3d_planet_up, DEFVAL(Vector3()));
+	ClassDB::bind_method(D_METHOD("set_editor_3d_clip", "znear", "zfar"), &EditorInterface::set_editor_3d_clip);
+	ClassDB::bind_method(D_METHOD("set_editor_3d_grid_enabled", "enabled"), &EditorInterface::set_editor_3d_grid_enabled);
 
 #ifndef DISABLE_DEPRECATED
 	ClassDB::bind_method(D_METHOD("get_editor_main_screen"), &EditorInterface::get_editor_main_screen);

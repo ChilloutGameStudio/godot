@@ -4331,6 +4331,26 @@ float Node3DEditor::get_zfar() const {
 	return settings_zfar->get_value();
 }
 
+void Node3DEditor::set_z_clip(float p_znear, float p_zfar) {
+	settings_znear->set_value(p_znear);
+	settings_zfar->set_value(p_zfar);
+}
+
+void Node3DEditor::set_grid_enabled(bool p_enabled) {
+	if (grid_enabled == p_enabled) {
+		return;
+	}
+	grid_enabled = p_enabled;
+	for (int i = 0; i < 3; ++i) {
+		if (grid_enable[i]) {
+			grid_visible[i] = grid_enabled;
+		}
+	}
+	_finish_grid();
+	_init_grid();
+	view_layout_menu->get_popup()->set_item_checked(view_layout_menu->get_popup()->get_item_index(MENU_VIEW_GRID), grid_enabled);
+}
+
 float Node3DEditor::get_fov() const {
 	return settings_fov->get_value();
 }

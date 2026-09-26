@@ -39,11 +39,28 @@
 
 using namespace View3DControllerConsts;
 
+// SpellForge: the frame whose +Y is the local up at the pivot (east, up, south as X, Y, Z; the tangent frame of the
+// game's coordinates.ts), or identity in the normal world-Y mode and at the poles' axis.
+Basis View3DController::_up_frame(const Cursor &p_cursor) const {
+	if (!planet_up) {
+		return Basis();
+	}
+	const Vector3 up = (Vector3(p_cursor.pos_x, p_cursor.pos_y, p_cursor.pos_z) - up_origin).normalized();
+	Vector3 east(up.z, 0, -up.x);
+	if (up == Vector3() || east.length_squared() < 1e-12) {
+		return Basis();
+	}
+	east.normalize();
+	const Vector3 north = up.cross(east).normalized();
+	return Basis(east, up, -north);
+}
+
 Transform3D View3DController::_to_camera_transform(const Cursor &p_cursor) const {
 	Transform3D camera_transform;
 	camera_transform.translate_local(Vector3(p_cursor.pos_x, p_cursor.pos_y, p_cursor.pos_z));
 	camera_transform.basis.rotate(Vector3(1, 0, 0), -p_cursor.x_rot);
 	camera_transform.basis.rotate(Vector3(0, 1, 0), -p_cursor.y_rot);
+	camera_transform.basis = _up_frame(p_cursor) * camera_transform.basis;
 
 	if (orthogonal) {
 		camera_transform.translate_local(0, 0, (zfar - znear) / 2.0);
@@ -336,6 +353,7 @@ void View3DController::cursor_pan(const Ref<InputEventWithModifiers> &p_event, c
 	camera_transform.translate_local(Vector3(cursor.pos_x, cursor.pos_y, cursor.pos_z));
 	camera_transform.basis.rotate(Vector3(1, 0, 0), -cursor.x_rot);
 	camera_transform.basis.rotate(Vector3(0, 1, 0), -cursor.y_rot);
+	camera_transform.basis = _up_frame(cursor) * camera_transform.basis;
 	Vector3 translation(
 			(invert_x_axis ? -1 : 1) * -p_relative.x * pan_speed,
 			(invert_y_axis ? -1 : 1) * p_relative.y * pan_speed,

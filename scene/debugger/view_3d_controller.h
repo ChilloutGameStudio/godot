@@ -231,6 +231,12 @@ private:
 
 	bool lock_rotation = false;
 
+	// SpellForge: "planet up". The camera's up follows the direction from up_origin (a planet's centre) to the orbit
+	// pivot instead of the world's +Y, so orbiting, panning and freelook stay level anywhere on a sphere.
+	bool planet_up = false;
+	Vector3 up_origin;
+	Basis _up_frame(const Cursor &p_cursor) const;
+
 	float znear = 0;
 	float zfar = 0;
 
@@ -328,6 +334,11 @@ public:
 	void set_auto_orthogonal_allowed(const bool p_enabled);
 
 	void set_lock_rotation(const bool p_locked) { lock_rotation = p_locked; }
+	void set_planet_up(const bool p_enabled, const Vector3 &p_origin = Vector3()) {
+		planet_up = p_enabled;
+		up_origin = p_origin;
+	}
+	bool is_planet_up() const { return planet_up; }
 	bool is_locking_rotation() { return lock_rotation; }
 
 	void set_z_near(const float p_near) { znear = p_near; }

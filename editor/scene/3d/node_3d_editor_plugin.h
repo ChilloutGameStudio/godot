@@ -451,6 +451,10 @@ public:
 
 	float get_znear() const;
 	float get_zfar() const;
+	// SpellForge: the cameras' clip planes from code (on a planet they follow the camera's altitude), and the grid
+	// on or off (a flat grid through a planet's centre means nothing).
+	void set_z_clip(float p_znear, float p_zfar);
+	void set_grid_enabled(bool p_enabled);
 	float get_fov() const;
 
 	Transform3D get_gizmo_transform() const { return gizmo.transform; }

@@ -1193,8 +1193,8 @@ Vector3 Node3DEditorViewport::_get_screen_to_space(const Vector3 &p_vector3) {
 
 	Transform3D camera_transform;
 	camera_transform.translate_local(Vector3(view_3d_controller->cursor.pos_x, view_3d_controller->cursor.pos_y, view_3d_controller->cursor.pos_z));
-	camera_transform.basis.rotate(Vector3(1, 0, 0), -view_3d_controller->cursor.x_rot);
-	camera_transform.basis.rotate(Vector3(0, 1, 0), -view_3d_controller->cursor.y_rot);
+	// SpellForge: the controller's rotation (it includes the planet-up frame).
+	camera_transform.basis = view_3d_controller->to_camera_transform().basis;
 	camera_transform.translate_local(0, 0, view_3d_controller->cursor.distance);
 
 	return camera_transform.xform(Vector3(((p_vector3.x / get_size().width) * 2.0 - 1.0) * screen_he.x, ((1.0 - (p_vector3.y / get_size().height)) * 2.0 - 1.0) * screen_he.y, -(get_znear() + p_vector3.z)));

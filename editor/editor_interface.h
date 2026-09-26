@@ -129,6 +129,13 @@ public:
 	ScriptEditor *get_script_editor() const;
 	SubViewport *get_editor_viewport_2d() const;
 	SubViewport *get_editor_viewport_3d(int p_idx = 0) const;
+	// SpellForge: the 3D editor viewports' view (pivot "position", "x_rotation", "y_rotation", "distance", …: the
+	// editor's own saved state) and the planet-up camera frame for editing on a sphere.
+	Dictionary get_editor_viewport_3d_state(int p_idx = 0) const;
+	void set_editor_viewport_3d_state(int p_idx, const Dictionary &p_state);
+	void set_editor_viewports_3d_planet_up(bool p_enabled, const Vector3 &p_origin = Vector3());
+	void set_editor_3d_clip(float p_znear, float p_zfar);
+	void set_editor_3d_grid_enabled(bool p_enabled);
 
 #ifndef DISABLE_DEPRECATED
 	void set_main_screen_editor(const String &p_name);
