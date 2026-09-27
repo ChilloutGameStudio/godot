@@ -1355,6 +1355,26 @@ void AudioServer::init() {
 	GLOBAL_DEF_RST(PropertyInfo(Variant::INT, "audio/video/video_delay_compensation_ms", PROPERTY_HINT_RANGE, "-1000,1000,1,suffix:ms"), 0);
 }
 
+void AudioServer::release_scene_audio(uint64_t p_timeout_usec) {
+	for (AudioStreamPlaybackListNode *playback : playback_list) {
+		stop_playback_stream(playback->stream_playback);
+	}
+	const uint64_t until = OS::get_singleton()->get_ticks_usec() + p_timeout_usec;
+	while (playback_stream_count.get() > 0 && OS::get_singleton()->get_ticks_usec() < until) {
+		OS::get_singleton()->delay_usec(2000);
+	}
+	_cleanup_lists();
+	// The mixer holds this lock while it runs the effects. The instances live per channel.
+	lock();
+	for (Bus *bus : buses) {
+		bus->effects.clear();
+		for (int i = 0; i < bus->channels.size(); i++) {
+			bus->channels.write[i].effect_instances.clear();
+		}
+	}
+	unlock();
+}
+
 void AudioServer::update() {
 #ifdef DEBUG_ENABLED
 	if (EngineDebugger::is_profiling(SNAME("servers"))) {

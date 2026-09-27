@@ -5258,6 +5258,12 @@ void Main::cleanup(bool p_force) {
 
 	OS::get_singleton()->delete_main_loop();
 
+	// SpellForge fork: release the audio playbacks and bus effects while their classes still exist (see
+	// AudioServer::release_scene_audio).
+	if (audio_server) {
+		audio_server->release_scene_audio(250000);
+	}
+
 	OS::get_singleton()->_cmdline.clear();
 	OS::get_singleton()->_user_args.clear();
 	OS::get_singleton()->_execpath = "";

@@ -312,6 +312,11 @@ public:
 	virtual void init();
 	virtual void finish();
 	virtual void update();
+	// SpellForge fork: at shutdown, once the scene is gone and before extensions unload, release everything the mixer
+	// runs on the audio thread: stop every playback, wait (at most p_timeout_usec) for the mixer to drop them and free
+	// them, then take the effects off every bus. GDExtension playbacks and bus effects would otherwise be called (the
+	// audio thread keeps mixing until finish()) or freed after their extension unloaded, which crashed the exit.
+	void release_scene_audio(uint64_t p_timeout_usec);
 	virtual void load_default_bus_layout();
 
 	/* MISC config */
