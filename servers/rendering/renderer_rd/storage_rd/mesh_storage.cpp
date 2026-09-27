@@ -1574,6 +1574,30 @@ void MeshStorage::_multimesh_free(RID p_rid) {
 	multimesh_owner.free(p_rid);
 }
 
+// SpellForge: the indirect draw commands for a MultiMesh's mesh (one per surface), replacing any it had.
+void MeshStorage::_multimesh_make_command_buffer(MultiMesh *multimesh) {
+	if (multimesh->command_buffer.is_valid()) {
+		RD::get_singleton()->free_rid(multimesh->command_buffer);
+		multimesh->command_buffer = RID();
+	}
+	Mesh *mesh = mesh_owner.get_or_null(multimesh->mesh);
+	if (!mesh || mesh->surface_count == 0) {
+		return;
+	}
+	Vector<uint8_t> newVector;
+	newVector.resize_initialized(sizeof(uint32_t) * INDIRECT_MULTIMESH_COMMAND_STRIDE * mesh->surface_count);
+
+	for (uint32_t i = 0; i < mesh->surface_count; i++) {
+		uint32_t count = mesh_surface_get_vertices_drawn_count(mesh->surfaces[i]);
+		newVector.set(i * sizeof(uint32_t) * INDIRECT_MULTIMESH_COMMAND_STRIDE, static_cast<uint8_t>(count));
+		newVector.set(i * sizeof(uint32_t) * INDIRECT_MULTIMESH_COMMAND_STRIDE + 1, static_cast<uint8_t>(count >> 8));
+		newVector.set(i * sizeof(uint32_t) * INDIRECT_MULTIMESH_COMMAND_STRIDE + 2, static_cast<uint8_t>(count >> 16));
+		newVector.set(i * sizeof(uint32_t) * INDIRECT_MULTIMESH_COMMAND_STRIDE + 3, static_cast<uint8_t>(count >> 24));
+	}
+
+	multimesh->command_buffer = RD::get_singleton()->storage_buffer_create(sizeof(uint32_t) * INDIRECT_MULTIMESH_COMMAND_STRIDE * mesh->surface_count, newVector, RD::STORAGE_BUFFER_USAGE_DISPATCH_INDIRECT);
+}
+
 void MeshStorage::_multimesh_allocate_data(RID p_multimesh, int p_instances, RSE::MultimeshTransformFormat p_transform_format, bool p_use_colors, bool p_use_custom_data, bool p_use_indirect) {
 	MultiMesh *multimesh = multimesh_owner.get_or_null(p_multimesh);
 	ERR_FAIL_NULL(multimesh);
@@ -1611,7 +1635,15 @@ void MeshStorage::_multimesh_allocate_data(RID p_multimesh, int p_instances, RSE
 	multimesh->buffer_set = false;
 
 	multimesh->indirect = p_use_indirect;
-	multimesh->command_buffer = RID();
+	// SpellForge: free the indirect command buffer instead of dropping it (it leaked on every free and reallocation),
+	// and rebuild it for the mesh already set (it was only made when the mesh changed).
+	if (multimesh->command_buffer.is_valid()) {
+		RD::get_singleton()->free_rid(multimesh->command_buffer);
+		multimesh->command_buffer = RID();
+	}
+	if (multimesh->indirect && p_instances > 0) {
+		_multimesh_make_command_buffer(multimesh);
+	}
 
 	//print_line("allocate, elements: " + itos(p_instances) + " 2D: " + itos(p_transform_format == RSE::MULTIMESH_TRANSFORM_2D) + " colors " + itos(multimesh->uses_colors) + " data " + itos(multimesh->uses_custom_data) + " stride " + itos(multimesh->stride_cache) + " total size " + itos(multimesh->stride_cache * multimesh->instances));
 	multimesh->data_cache = Vector<float>();
@@ -1704,27 +1736,8 @@ void MeshStorage::_multimesh_set_mesh(RID p_multimesh, RID p_mesh) {
 	multimesh->mesh = p_mesh;
 
 	if (multimesh->indirect) {
-		Mesh *mesh = mesh_owner.get_or_null(p_mesh);
-		ERR_FAIL_NULL(mesh);
-		if (mesh->surface_count > 0) {
-			if (multimesh->command_buffer.is_valid()) {
-				RD::get_singleton()->free_rid(multimesh->command_buffer);
-			}
-
-			Vector<uint8_t> newVector;
-			newVector.resize_initialized(sizeof(uint32_t) * INDIRECT_MULTIMESH_COMMAND_STRIDE * mesh->surface_count);
-
-			for (uint32_t i = 0; i < mesh->surface_count; i++) {
-				uint32_t count = mesh_surface_get_vertices_drawn_count(mesh->surfaces[i]);
-				newVector.set(i * sizeof(uint32_t) * INDIRECT_MULTIMESH_COMMAND_STRIDE, static_cast<uint8_t>(count));
-				newVector.set(i * sizeof(uint32_t) * INDIRECT_MULTIMESH_COMMAND_STRIDE + 1, static_cast<uint8_t>(count >> 8));
-				newVector.set(i * sizeof(uint32_t) * INDIRECT_MULTIMESH_COMMAND_STRIDE + 2, static_cast<uint8_t>(count >> 16));
-				newVector.set(i * sizeof(uint32_t) * INDIRECT_MULTIMESH_COMMAND_STRIDE + 3, static_cast<uint8_t>(count >> 24));
-			}
-
-			RID newBuffer = RD::get_singleton()->storage_buffer_create(sizeof(uint32_t) * INDIRECT_MULTIMESH_COMMAND_STRIDE * mesh->surface_count, newVector, RD::STORAGE_BUFFER_USAGE_DISPATCH_INDIRECT);
-			multimesh->command_buffer = newBuffer;
-		}
+		ERR_FAIL_NULL(mesh_owner.get_or_null(p_mesh));
+		_multimesh_make_command_buffer(multimesh);
 	}
 
 	if (multimesh->instances == 0) {

@@ -695,6 +695,7 @@ public:
 	virtual MultiMeshInterpolator *_multimesh_get_interpolator(RID p_multimesh) const override;
 
 	void _update_dirty_multimeshes();
+	void _multimesh_make_command_buffer(MultiMesh *multimesh); // SpellForge
 	void _multimesh_get_motion_vectors_offsets(RID p_multimesh, uint32_t &r_current_offset, uint32_t &r_prev_offset);
 	bool _multimesh_uses_motion_vectors_offsets(RID p_multimesh);
 	bool _multimesh_uses_motion_vectors(RID p_multimesh);
